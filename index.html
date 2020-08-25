@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>モンスタージェネレータ</title>
+	<style>
+		* { margin:0; padding:0; }
+		html, body { width:100%; height:100%; }
+		canvas { display:block; }
+	</style>
+</head>
+<body>
+	<canvas id="canvas" width="1000" height="800"></canvas>
+	<script>
+		const canvas = document.getElementById('canvas');
+		function resizeCanvas() {
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+		}
+		resizeCanvas();
+		const ctx = canvas.getContext('2d');
+		
+		function drawEye(point, size) {
+			const rEye = Math.min(size.rx, size.ry) / 2;
+			const eyePos = {x:point.x + (2*Math.random()-1) * (size.rx - rEye- 5), y:point.y + (2*Math.random()-1) * (size.ry - rEye - 5)};
+			ctx.fillStyle = 'white';
+			ctx.beginPath();
+			ctx.ellipse(eyePos.x, eyePos.y, rEye, rEye, 0, 0, 2 * Math.PI);
+			ctx.fill();
+			
+			const rRain = rEye / (1.5 + Math.random() * 0.4);
+			const rainPos = {x:eyePos.x + (2*Math.random()-1) * (rEye - rRain- 1), y:eyePos.y + (2*Math.random()-1) * (rEye - rRain - 1)};
+			ctx.fillStyle = 'blue';
+			ctx.beginPath();
+			ctx.ellipse(rainPos.x, rainPos.y, rRain, rRain, 0, 0, 2 * Math.PI);
+			ctx.fill();
+		}
+	
+		function drawCell(point, size) {
+			ctx.fillStyle = 'red';
+
+			ctx.beginPath();
+			ctx.ellipse(point.x, point.y, size.rx, size.ry, 0, 0, 2 * Math.PI);
+			ctx.fill();
+		}
+				
+		let samplePoints = [];
+		
+		function distance(point1, point2) {
+			return Math.sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
+		}
+		
+		function seasonedRandom(n) {
+			let ans = 0;
+			for (i = 0; i < n; i++) {
+				ans += Math.random();
+			}
+			return ans / n;
+		}
+		
+		function calculateRadius(point, pointBefore, pointAfter) {
+			const distanceBefore = distance(point, pointBefore);
+			const distanceAfter = distance(point, pointAfter);
+			const rx = Math.max(distanceBefore, distanceAfter) / (1 + seasonedRandom(5) * 1.3);
+			const ry = Math.max(distanceBefore, distanceAfter) / (1 + seasonedRandom(5) * 1.3);
+			return {rx: rx, ry: ry};
+		}
+		
+		function drawMonster(points) {
+			const radiuses = [];
+			for (point in points) {
+				const beforeIdx = (point == 0) ? (0) : (point - 1);
+				const afterIdx = (point == (points.length - 1)) ? (points.length - 1) : (1 + parseInt(point));
+				radiuses.push(calculateRadius(points[point], points[beforeIdx], points[afterIdx]));
+			}
+			for (point in points) {
+				drawCell(points[point], radiuses[point]);
+			}
+			for (point in points) {
+				if (Math.random() * 12 > 5) continue;
+				drawEye(points[point], radiuses[point]);
+			}
+		}
+		
+		function onClick(e) {
+			const rect = e.target.getBoundingClientRect();
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+			samplePoints.push({x: x, y:y});
+			if (samplePoints.length >= 2) {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				drawMonster(samplePoints);
+			}
+		}
+		
+		canvas.addEventListener('click', onClick, false);
+	</script>
+</body>
+</html>
